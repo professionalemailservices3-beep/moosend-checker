@@ -38,25 +38,34 @@ async function handleCheckDns() {
         const data = await response.json();
 
         // -- Update Status UI --
-        const hasSpf = data.txt.some(record => record.startsWith('v=spf1'));
-        updateStatusItem('spf', hasSpf, 'SPF Record Found', 'No SPF Record Found');
+        const spfRecord = data.txt.find(record => record.startsWith('v=spf1'));
+        const hasMoosendSpf = spfRecord && spfRecord.includes('include:spfa.mailendo.com');
+
+        updateSpfStatus(spfRecord, hasMoosendSpf);
 
         const hasDmarc = data.dmarc.length > 0;
         updateStatusItem('dmarc', hasDmarc, 'DMARC Record Found', 'No DMARC Record Found');
 
-        // Show raw TXT records if they exist
-        if (data.txt.length > 0) {
-            document.getElementById('txtRecords').textContent = data.txt.join('\n');
-            document.getElementById('raw-records').classList.remove('hidden');
+        // -- Display Parsed SPF and Other TXT Records --
+        const rawRecordsContainer = document.getElementById('raw-records');
+        if (spfRecord) {
+            parseAndDisplaySpf(spfRecord);
+            const otherTxt = data.txt.filter(record => !record.startsWith('v=spf1'));
+            displayOtherTxt(otherTxt);
+            rawRecordsContainer.classList.remove('hidden');
         } else {
-            document.getElementById('raw-records').classList.add('hidden');
+            rawRecordsContainer.classList.add('hidden');
         }
 
-        // Move to next step
-        document.getElementById('dkimSection').classList.remove('hidden');
-        mainBtn.dataset.state = 'dnsChecked';
-        document.getElementById('btnText').textContent = 'Generate Moosend Records';
-        document.getElementById('btnIcon').classList.remove('hidden');
+        // Move to next step only if Moosend SPF is missing
+        if (!hasMoosendSpf) {
+            document.getElementById('dkimSection').classList.remove('hidden');
+            mainBtn.dataset.state = 'dnsChecked';
+            document.getElementById('btnText').textContent = 'Generate Moosend Records';
+            document.getElementById('btnIcon').classList.remove('hidden');
+        } else {
+            mainBtn.style.display = 'none'; // Hide button if everything is perfect
+        }
 
     } catch (error) {
         errorBox.textContent = `Error: ${error.message}\n\nPlease check your Netlify deploy logs for more details.`;
@@ -68,23 +77,63 @@ async function handleCheckDns() {
     }
 }
 
-function updateStatusItem(type, isValid, validText, invalidText) {
+function updateStatusItem(type, isValid, validText, invalidText, statusClass = '') {
     const statusEl = document.getElementById(`${type}-status`);
     const iconEl = document.getElementById(`${type}-status-icon`);
     const textEl = document.getElementById(`${type}-status-text`);
 
-    statusEl.className = `status-item ${isValid ? 'valid' : 'invalid'}`;
+    statusEl.className = `status-item ${statusClass || (isValid ? 'valid' : 'invalid')}`;
     iconEl.className = `fas ${isValid ? 'fa-check-circle' : 'fa-times-circle'}`;
     textEl.textContent = isValid ? validText : invalidText;
 }
 
-function handleGenerateRecords() {
-    const dkimValue = document.getElementById('dkimValue').value;
-    if (!dkimValue) {
-        alert('Please paste your Moosend DKIM value.');
-        return;
+function updateSpfStatus(spfRecord, hasMoosendSpf) {
+    if (hasMoosendSpf) {
+        updateStatusItem('spf', true, 'SPF is Valid for Moosend', '', 'valid');
+    } else if (spfRecord) {
+        updateStatusItem('spf', false, '', 'SPF needs Moosend value', 'warning');
+        document.getElementById('spf-status-icon').className = 'fas fa-exclamation-triangle';
+    } else {
+        updateStatusItem('spf', false, '', 'No SPF Record Found', 'invalid');
     }
+}
 
+function parseAndDisplaySpf(spfRecord) {
+    const container = document.getElementById('spfRecordParsed');
+    container.innerHTML = ''; // Clear previous results
+    const mechanisms = spfRecord.replace(/"/g, '').split(' ');
+
+    mechanisms.forEach(mech => {
+        const span = document.createElement('span');
+        span.className = 'spf-mechanism';
+        let type = 'unknown';
+
+        if (mech.startsWith('v=')) type = 'version';
+        else if (mech.startsWith('include:')) type = 'include';
+        else if (mech.startsWith('ip4:') || mech.startsWith('ip6:')) type = 'ip4';
+        else if (mech.endsWith('all')) type = 'all';
+
+        span.classList.add(`spf-${type}`);
+        span.textContent = mech;
+        container.appendChild(span);
+    });
+}
+
+function displayOtherTxt(otherTxtRecords) {
+    const container = document.getElementById('otherTxtRecords');
+    const header = document.getElementById('otherTxtHeader');
+    if (otherTxtRecords.length > 0) {
+        container.textContent = otherTxtRecords.join('\n');
+        container.classList.remove('hidden');
+        header.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+        header.classList.add('hidden');
+    }
+}
+
+function handleGenerateRecords() {
+    // This function remains largely the same but has a new section for the "already configured" state.
     const domain = document.getElementById('domain').value;
     const mainContainer = document.getElementById('mainContainer');
     const pageWrapper = document.querySelector('.page-wrapper');
@@ -95,32 +144,71 @@ function handleGenerateRecords() {
     const generatedContainer = document.createElement('div');
     generatedContainer.className = 'container generated-records';
 
-    const fetchedTxtRecords = document.getElementById('txtRecords').textContent.split('\n');
-    const existingSpf = fetchedTxtRecords.find(record => record.startsWith('v=spf1'));
-    const moosendSpf = 'include:spfa.mailendo.com';
-    let spfRecordValue = '';
-    let spfInstruction = '';
+    const fetchedTxtRecords = document.getElementById('spfRecordParsed').textContent.split(' ');
+    const existingSpf = fetchedTxtRecords.join(' ');
+    const hasMoosendSpf = existingSpf.includes('include:spfa.mailendo.com');
+    const dkimValue = document.getElementById('dkimValue').value;
 
-    if (existingSpf && !existingSpf.includes('No TXT records found.')) {
-        spfInstruction = `Your domain already has an SPF record. You must merge the Moosend value into it. **Do not create a second SPF record.** Update your existing record to look like this:`;
-        let cleanExistingSpf = existingSpf.replace(/^"|"$/g, '');
-        const parts = cleanExistingSpf.split(' ');
-        if (!parts.includes(moosendSpf)) {
-            parts.splice(parts.length - 1, 0, moosendSpf);
-        }
-        spfRecordValue = parts.join(' ');
+    let spfSection = '';
+
+    if (hasMoosendSpf) {
+        spfSection = `
+        <div class="record-section">
+            <h3>SPF Record</h3>
+            <p>Your SPF record is already correctly configured for Moosend. No action is needed.</p>
+            <div class="dns-output">${existingSpf}</div>
+        </div>`;
     } else {
-        spfInstruction = `Your domain does not have an SPF record. Add the following new record to your DNS:`;
-        spfRecordValue = `v=spf1 ${moosendSpf} ~all`;
+        if (!dkimValue) {
+            alert('Please paste your Moosend DKIM value.');
+            return; // Only require DKIM if we're generating new records
+        }
+        const moosendSpf = 'include:spfa.mailendo.com';
+        let spfRecordValue = '';
+        let spfInstruction = '';
+
+        if (existingSpf) {
+            spfInstruction = `Your domain already has an SPF record. You must merge the Moosend value into it. **Do not create a second SPF record.** Update your existing record to look like this:`;
+            const parts = existingSpf.split(' ');
+            if (!parts.includes(moosendSpf)) {
+                parts.splice(parts.length - 1, 0, moosendSpf);
+            }
+            spfRecordValue = parts.join(' ');
+        } else {
+            spfInstruction = `Your domain does not have an SPF record. Add the following new record to your DNS:`;
+            spfRecordValue = `v=spf1 ${moosendSpf} ~all`;
+        }
+        spfSection = `
+        <div class="record-section">
+            <h3>SPF Record</h3>
+            <p>${spfInstruction}</p>
+            <div class="generated-record-display">
+                <p><strong>Record Type:</strong> TXT</p>
+                <p><strong>Record Host:</strong> <span class="record-host">@</span></p>
+                <p><strong>Record Value:</strong></p>
+                <div class="dns-output">${spfRecordValue}</div>
+            </div>
+        </div>`;
     }
 
     const dkimHost = `ms._domainkey.${domain}`;
     const dkimRecordValue = `v=DKIM1; k=rsa; p=${dkimValue}`;
+    const dkimSection = !dkimValue ? '' : `
+        <div class="record-section">
+            <h3>DKIM Record</h3>
+            <p>Add the following TXT record to your DNS. This enables Moosend to sign your emails, proving they came from you.</p>
+            <div class="generated-record-display">
+                <p><strong>Record Type:</strong> TXT</p>
+                <p><strong>Record Host:</strong> <span class="record-host">${dkimHost}</span></p>
+                <p><strong>Record Value:</strong></p>
+                <div class="dns-output">${dkimRecordValue}</div>
+            </div>
+        </div>`;
 
     const hasDmarc = document.getElementById('dmarc-status').classList.contains('valid');
-    let dmarcSection = '';
+    let dmarcSectionHtml = '';
     if (!hasDmarc) {
-        dmarcSection = `
+        dmarcSectionHtml = `
         <div class="record-section">
             <h3>DMARC Record (Recommended)</h3>
             <p>Your domain is missing a DMARC record. This is highly recommended for email security. You can start with this basic policy:</p>
@@ -135,27 +223,9 @@ function handleGenerateRecords() {
 
     generatedContainer.innerHTML = `
         <h2>Moosend Configuration</h2>
-        <div class="record-section">
-            <h3>SPF Record</h3>
-            <p>${spfInstruction}</p>
-            <div class="generated-record-display">
-                <p><strong>Record Type:</strong> TXT</p>
-                <p><strong>Record Host:</strong> <span class="record-host">@</span></p>
-                <p><strong>Record Value:</strong></p>
-                <div class="dns-output">${spfRecordValue}</div>
-            </div>
-        </div>
-        <div class="record-section">
-            <h3>DKIM Record</h3>
-            <p>Add the following TXT record to your DNS. This enables Moosend to sign your emails, proving they came from you.</p>
-            <div class="generated-record-display">
-                <p><strong>Record Type:</strong> TXT</p>
-                <p><strong>Record Host:</strong> <span class="record-host">${dkimHost}</span></p>
-                <p><strong>Record Value:</strong></p>
-                <div class="dns-output">${dkimRecordValue}</div>
-            </div>
-        </div>
-        ${dmarcSection}
+        ${spfSection}
+        ${dkimSection}
+        ${dmarcSectionHtml}
     `;
 
     pageWrapper.appendChild(generatedContainer);

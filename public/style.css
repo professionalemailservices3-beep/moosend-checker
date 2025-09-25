@@ -62,6 +62,10 @@ hr {
     margin: 2rem 0;
 }
 
+h3 {
+    margin-top: 1.5rem;
+}
+
 .input-group {
     margin-bottom: 1.5rem;
 }
@@ -158,12 +162,11 @@ button:disabled {
     font-family: monospace;
 }
 
-/* New Status Grid Styles */
 .status-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .status-item {
@@ -182,15 +185,71 @@ button:disabled {
 
 .status-item.valid {
     color: #38a169;
-    /* Green */
 }
 
+/* Green */
 .status-item.invalid {
     color: #e53e3e;
-    /* Red */
 }
 
+/* Red */
 .status-item.neutral {
+    color: #a0aec0;
+}
+
+/* Gray */
+.status-item.warning {
+    color: #dd6b20;
+}
+
+/* Orange */
+
+/* New Parsed SPF Display Styles */
+.dns-output-parsed {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+.spf-mechanism {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-family: monospace;
+    font-size: 0.9em;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.spf-mechanism.spf-version {
+    background-color: #e2e8f0;
+    color: #4a5568;
+}
+
+.spf-mechanism.spf-include {
+    background-color: #ebf4ff;
+    color: #4299e1;
+    border-color: #bee3f8;
+}
+
+.spf-mechanism.spf-ip4,
+.spf-mechanism.spf-ip6 {
+    background-color: #f0fff4;
+    color: #48bb78;
+    border-color: #9ae6b4;
+}
+
+.spf-mechanism.spf-all {
+    background-color: #fff5f5;
+    color: #c53030;
+    border-color: #fc8181;
+}
+
+.spf-mechanism.spf-unknown {
+    background-color: #fafafa;
     color: #718096;
-    /* Gray */
+    border-color: #e2e8f0;
 }

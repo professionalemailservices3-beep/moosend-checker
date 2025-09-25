@@ -32,7 +32,7 @@
                         <i id="spf-status-icon" class="fas fa-spinner fa-spin"></i>
                         <span id="spf-status-text">Checking SPF...</span>
                     </div>
-                    <div id="dkim-status" class="status-item">
+                    <div id="dkim-status" class="status-item neutral">
                         <i id="dkim-status-icon" class="fas fa-cogs"></i>
                         <span id="dkim-status-text">Ready to configure DKIM</span>
                     </div>
@@ -42,8 +42,10 @@
                     </div>
                 </div>
                 <div id="raw-records" class="hidden">
-                    <h3>Full TXT Record(s) Found</h3>
-                    <div id="txtRecords" class="dns-output"></div>
+                    <h3>Your Parsed SPF Record</h3>
+                    <div id="spfRecordParsed" class="dns-output-parsed"></div>
+                    <h3 id="otherTxtHeader" class="hidden">Other TXT Records</h3>
+                    <div id="otherTxtRecords" class="dns-output"></div>
                 </div>
             </div>
 
