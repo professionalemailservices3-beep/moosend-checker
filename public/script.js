@@ -1,35 +1,22 @@
-document.getElementById('mainBtn').addEventListener('click', () => handleDnsCheck());
-document.getElementById('domain').addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        handleDnsCheck();
-    }
-});
+// --- Event Listeners ---
+document.getElementById('mainBtn').addEventListener('click', handleDnsCheck);
+document.getElementById('domain').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleDnsCheck(); } });
 document.getElementById('resetBtn').addEventListener('click', resetApp);
+document.getElementById('dkimLookupBtn').addEventListener('click', handleDkimLookup);
 
+// --- Core Functions ---
 function handleDnsCheck() {
     const state = document.getElementById('mainBtn').dataset.state || 'initial';
-    if (state === 'initial') {
-        performDnsQuery();
-    } else {
-        handleGenerateRecords();
-    }
+    if (state === 'initial') performDnsQuery();
+    else handleGenerateRecords();
 }
 
 async function performDnsQuery() {
+    clearPreviousResults();
     const domain = document.getElementById('domain').value;
-    const errorBox = document.getElementById('error-box');
-    errorBox.classList.add('hidden');
+    if (!domain) { alert('Please enter a valid domain name.'); return; }
 
-    if (!domain) {
-        alert('Please enter a valid domain name.');
-        return;
-    }
-
-    const mainBtn = document.getElementById('mainBtn');
-    const loader = document.getElementById('loader');
-    const resultsSection = document.getElementById('results-section');
-
+    const mainBtn = document.getElementById('mainBtn'), loader = document.getElementById('loader'), resultsSection = document.getElementById('results-section');
     mainBtn.disabled = true;
     loader.classList.remove('hidden');
     resultsSection.classList.remove('hidden');
@@ -37,38 +24,35 @@ async function performDnsQuery() {
 
     try {
         const response = await fetch(`/.netlify/functions/dns-query?domain=${domain}`);
-        if (!response.ok) throw new Error(`Status: ${response.status} (${response.statusText})\nThis means the API function failed or was not found.`);
+        if (!response.ok) throw new Error(`Status: ${response.status} (${response.statusText})`);
         const data = await response.json();
 
-        const spfRecord = data.txt.find(record => record.startsWith('v=spf1'));
-        const hasMoosendSpf = spfRecord && spfRecord.includes('include:spfa.mailendo.com');
-        updateSpfStatus(spfRecord, hasMoosendSpf);
+        // Update Status UI with all checks
+        updateStatusItem('mx', data.mx.length > 0, 'MX Records Found', 'No MX Records Found');
+        const spfRecord = data.txt.find(r => r.startsWith('v=spf1'));
+        updateSpfStatus(spfRecord, spfRecord && spfRecord.includes('include:spfa.mailendo.com'));
+        updateStatusItem('dmarc', data.dmarc.length > 0, 'DMARC Record Found', 'No DMARC Record Found');
 
-        const hasDmarc = data.dmarc.length > 0;
-        updateStatusItem('dmarc', hasDmarc, 'DMARC Record Found', 'No DMARC Record Found');
-
+        // Display Parsed SPF and Other TXT records
         const rawRecordsContainer = document.getElementById('raw-records');
         if (spfRecord) {
             parseAndDisplaySpf(spfRecord);
-            const otherTxt = data.txt.filter(record => !record.startsWith('v=spf1'));
+            const otherTxt = data.txt.filter(r => !r.startsWith('v=spf1'));
             if (otherTxt.length > 0) {
                 document.getElementById('otherTxtRecords').textContent = otherTxt.join('\n');
                 document.getElementById('otherTxtHeader').classList.remove('hidden');
             }
             rawRecordsContainer.classList.remove('hidden');
-        } else {
-            rawRecordsContainer.classList.add('hidden');
         }
 
-        // Always show DKIM section and Generate button after check
+        // Show DKIM section and update button
         document.getElementById('dkimSection').classList.remove('hidden');
         mainBtn.dataset.state = 'dnsChecked';
-        document.getElementById('btnText').textContent = 'Generate Moosend Records';
+        document.getElementById('btnText').textContent = 'Generate Final Records';
         document.getElementById('btnIcon').classList.remove('hidden');
-
     } catch (error) {
-        errorBox.textContent = `Error: ${error.message}`;
-        errorBox.classList.remove('hidden');
+        document.getElementById('error-box').textContent = `Error: ${error.message}`;
+        document.getElementById('error-box').classList.remove('hidden');
         resultsSection.classList.add('hidden');
     } finally {
         mainBtn.disabled = false;
@@ -76,153 +60,87 @@ async function performDnsQuery() {
     }
 }
 
-function handleGenerateRecords() {
+async function handleDkimLookup() {
     const domain = document.getElementById('domain').value;
-    const dkimValue = document.getElementById('dkimValue').value;
-    const mainContainer = document.getElementById('mainContainer');
-    const pageWrapper = document.querySelector('.page-wrapper');
-    const mainBtn = document.getElementById('mainBtn');
+    const selector = document.getElementById('dkimSelector').value;
+    const resultEl = document.getElementById('dkimLookupResult');
+    if (!selector) { alert('Please enter a DKIM selector.'); return; }
 
-    if (!dkimValue) {
-        alert('Please paste your Moosend DKIM value to generate the records.');
-        return;
+    resultEl.textContent = 'Looking up...';
+    resultEl.className = 'dkim-result-text';
+
+    try {
+        const response = await fetch(`/.netlify/functions/dkim-lookup?domain=${domain}&selector=${selector}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        document.getElementById('dkimValue').value = data.record[0];
+        resultEl.textContent = '✅ DKIM record found and populated!';
+        resultEl.classList.add('success');
+    } catch (error) {
+        resultEl.textContent = `❌ ${error.message}`;
+        resultEl.classList.add('error');
     }
+}
 
-    mainContainer.classList.add('moved-left');
+function handleGenerateRecords() {
+    const dkimValue = document.getElementById('dkimValue').value;
+    if (!dkimValue) { alert('Please lookup or paste a DKIM value to generate the records.'); return; }
 
+    document.getElementById('mainContainer').classList.add('moved-left');
     const generatedContainer = document.createElement('div');
     generatedContainer.className = 'container generated-records';
 
-    const spfRecord = document.getElementById('spfRecordParsed').textContent ? document.getElementById('spfRecordParsed').textContent.split(' ').join(' ') : null;
-    const hasMoosendSpf = spfRecord && spfRecord.includes('include:spfa.mailendo.com');
+    const spfRecordString = document.getElementById('raw-records').classList.contains('hidden') ? null : Array.from(document.getElementById('spfRecordParsed').childNodes).map(node => node.textContent).join(' ');
+    const hasMoosendSpf = spfRecordString && spfRecordString.includes('include:spfa.mailendo.com');
     const hasDmarc = document.getElementById('dmarc-status').classList.contains('valid');
+    const domain = document.getElementById('domain').value;
 
     generatedContainer.innerHTML = `
-        <h2>Moosend Configuration</h2>
-        ${generateSpfCard(spfRecord, hasMoosendSpf)}
+        <h2>Email Configuration</h2>
+        ${generateSpfCard(spfRecordString, hasMoosendSpf)}
         ${generateDkimCard(domain, dkimValue)}
         ${generateDmarcCard(domain, hasDmarc)}
     `;
 
-    pageWrapper.appendChild(generatedContainer);
-    mainBtn.disabled = true;
-    mainBtn.style.opacity = '0.6';
+    document.querySelector('.page-wrapper').appendChild(generatedContainer);
+    document.getElementById('mainBtn').disabled = true;
 
-    // Add event listeners to all new copy buttons
     generatedContainer.querySelectorAll('.copy-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const textToCopy = e.currentTarget.dataset.copy;
-            copyToClipboard(textToCopy, e.currentTarget);
-        });
+        button.addEventListener('click', (e) => copyToClipboard(e.currentTarget.dataset.copy, e.currentTarget));
     });
 }
 
+// --- UI Generation & Helpers --- (Most functions from here are helpers for the core logic above)
 function generateSpfCard(existingSpf, hasMoosendSpf) {
     let instruction, value;
     const moosendSpf = 'include:spfa.mailendo.com';
 
-    if (hasMoosendSpf) {
-        instruction = "Your SPF record is already correctly configured for Moosend. No action is needed.";
-        value = existingSpf;
-    } else if (existingSpf) {
-        instruction = "Your domain has an SPF record, but it's missing the Moosend value. **Update your existing record** to match the value below.";
-        const parts = existingSpf.split(' ');
-        if (!parts.includes(moosendSpf)) {
-            parts.splice(parts.length - 1, 0, moosendSpf);
-        }
-        value = parts.join(' ');
-    } else {
-        instruction = "Your domain does not have an SPF record. Create a new TXT record with the following details:";
-        value = `v=spf1 ${moosendSpf} ~all`;
-    }
+    if (hasMoosendSpf) { instruction = "Your SPF record is already correctly configured. No action is needed."; value = existingSpf; }
+    else if (existingSpf) { instruction = "Your domain has an SPF record, but it's missing the Moosend value. **Update your existing record** to match the value below."; const parts = existingSpf.split(' '); if (!parts.includes(moosendSpf)) parts.splice(parts.length - 1, 0, moosendSpf); value = parts.join(' '); }
+    else { instruction = "Your domain does not have an SPF record. Create a new TXT record with the following details:"; value = `v=spf1 ${moosendSpf} ~all`; }
 
-    return `
-        <div class="record-card">
-            <h3>SPF Record</h3>
-            <p class="instruction">${instruction}</p>
-            <div class="record-entry">
-                <span class="record-label">Type</span>
-                <span class="record-value">TXT</span>
-                <span></span> </div>
-            <div class="record-entry">
-                <span class="record-label">Host</span>
-                <span class="record-value">@</span>
-                <button class="copy-btn" data-copy="@" title="Copy"><i class="fas fa-copy"></i></button>
-            </div>
-            <div class="record-entry">
-                <span class="record-label">Value</span>
-                <span class="record-value">${value}</span>
-                <button class="copy-btn" data-copy="${value}" title="Copy"><i class="fas fa-copy"></i></button>
-            </div>
-        </div>`;
+    return `<div class="record-card"><h3>SPF Record</h3><p class="instruction">${instruction}</p><div class="record-entry"><span class="record-label">Type</span><span class="record-value">TXT</span><span></span></div><div class="record-entry"><span class="record-label">Host</span><span class="record-value">@</span><button class="copy-btn" data-copy="@" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><span class="record-value">${value}</span><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
 }
 
 function generateDkimCard(domain, dkimValue) {
-    const host = `ms._domainkey.${domain}`;
-    const value = `v=DKIM1; k=rsa; p=${dkimValue}`;
-    return `
-        <div class="record-card">
-            <h3>DKIM Record</h3>
-            <p class="instruction">Add this TXT record to enable Moosend to digitally sign your emails, proving they came from you.</p>
-            <div class="record-entry">
-                <span class="record-label">Type</span>
-                <span class="record-value">TXT</span>
-                <span></span>
-            </div>
-            <div class="record-entry">
-                <span class="record-label">Host</span>
-                <span class="record-value">${host}</span>
-                <button class="copy-btn" data-copy="${host}" title="Copy"><i class="fas fa-copy"></i></button>
-            </div>
-            <div class="record-entry">
-                <span class="record-label">Value</span>
-                <span class="record-value">${value}</span>
-                <button class="copy-btn" data-copy="${value}" title="Copy"><i class="fas fa-copy"></i></button>
-            </div>
-        </div>`;
+    const host = `ms._domainkey`; // Domain is added by DNS providers automatically
+    const value = dkimValue; // The full value is now looked up
+    return `<div class="record-card"><h3>DKIM Record</h3><p class="instruction">Add this TXT record to enable Moosend to digitally sign your emails.</p><div class="record-entry"><span class="record-label">Type</span><span class="record-value">TXT</span><span></span></div><div class="record-entry"><span class="record-label">Host</span><span class="record-value">${host}</span><button class="copy-btn" data-copy="${host}" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><span class="record-value">${value}</span><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
 }
 
 function generateDmarcCard(domain, hasDmarc) {
     if (hasDmarc) return '';
-    const host = `_dmarc.${domain}`;
+    const host = `_dmarc`;
     const value = `v=DMARC1; p=none; rua=mailto:dmarc-reports@${domain}`;
-    return `
-        <div class="record-card">
-            <h3>DMARC Record (Recommended)</h3>
-            <p class="instruction">Your domain is missing a DMARC record. We highly recommend adding one to improve security. You can start with this basic policy.</p>
-            <div class="record-entry">
-                <span class="record-label">Type</span>
-                <span class="record-value">TXT</span>
-                <span></span>
-            </div>
-            <div class="record-entry">
-                <span class="record-label">Host</span>
-                <span class="record-value">${host}</span>
-                <button class="copy-btn" data-copy="${host}" title="Copy"><i class="fas fa-copy"></i></button>
-            </div>
-            <div class="record-entry">
-                <span class="record-label">Value</span>
-                <span class="record-value">${value}</span>
-                <button class="copy-btn" data-copy="${value}" title="Copy"><i class="fas fa-copy"></i></button>
-            </div>
-        </div>`;
-}
-
-function copyToClipboard(text, buttonElement) {
-    navigator.clipboard.writeText(text).then(() => {
-        const originalIcon = buttonElement.innerHTML;
-        buttonElement.innerHTML = `<i class="fas fa-check" style="color: green;"></i>`;
-        setTimeout(() => {
-            buttonElement.innerHTML = originalIcon;
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy text: ', err);
-    });
+    return `<div class="record-card"><h3>DMARC Record (Recommended)</h3><p class="instruction">Your domain is missing a DMARC record. We highly recommend adding one to improve security.</p><div class="record-entry"><span class="record-label">Type</span><span class="record-value">TXT</span><span></span></div><div class="record-entry"><span class="record-label">Host</span><span class="record-value">${host}</span><button class="copy-btn" data-copy="${host}" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><span class="record-value">${value}</span><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
 }
 
 function resetApp() {
     document.getElementById('domain').value = '';
     document.getElementById('dkimValue').value = '';
+    document.getElementById('dkimSelector').value = 'ms';
+    document.getElementById('dkimLookupResult').textContent = '';
 
     document.getElementById('error-box').classList.add('hidden');
     document.getElementById('results-section').classList.add('hidden');
@@ -236,14 +154,23 @@ function resetApp() {
     document.getElementById('btnText').textContent = 'Check DNS';
     document.getElementById('btnIcon').classList.add('hidden');
 
-    document.getElementById('mainContainer').classList.remove('moved-left');
-    const generatedContainer = document.querySelector('.generated-records');
-    if (generatedContainer) {
-        generatedContainer.remove();
-    }
+    clearPreviousResults();
 }
 
-// Helper functions from before, no changes needed to these
+function clearPreviousResults() {
+    document.getElementById('mainContainer').classList.remove('moved-left');
+    const generatedContainer = document.querySelector('.generated-records');
+    if (generatedContainer) generatedContainer.remove();
+}
+
+function copyToClipboard(text, buttonElement) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalIcon = buttonElement.innerHTML;
+        buttonElement.innerHTML = `<i class="fas fa-check" style="color: green;"></i>`;
+        setTimeout(() => { buttonElement.innerHTML = originalIcon; }, 2000);
+    }).catch(err => console.error('Failed to copy text: ', err));
+}
+
 function updateStatusItem(type, isValid, validText, invalidText, statusClass = '') {
     const statusEl = document.getElementById(`${type}-status`);
     const iconEl = document.getElementById(`${type}-status-icon`);
@@ -254,14 +181,9 @@ function updateStatusItem(type, isValid, validText, invalidText, statusClass = '
 }
 
 function updateSpfStatus(spfRecord, hasMoosendSpf) {
-    if (hasMoosendSpf) {
-        updateStatusItem('spf', true, 'SPF is Valid for Moosend', '', 'valid');
-    } else if (spfRecord) {
-        updateStatusItem('spf', false, '', 'SPF needs Moosend value', 'warning');
-        document.getElementById('spf-status-icon').className = 'fas fa-exclamation-triangle';
-    } else {
-        updateStatusItem('spf', false, '', 'No SPF Record Found', 'invalid');
-    }
+    if (hasMoosendSpf) updateStatusItem('spf', true, 'SPF is Valid for Moosend', '', 'valid');
+    else if (spfRecord) { updateStatusItem('spf', false, '', 'SPF needs Moosend value', 'warning'); document.getElementById('spf-status-icon').className = 'fas fa-exclamation-triangle'; }
+    else updateStatusItem('spf', false, '', 'No SPF Record Found', 'invalid');
 }
 
 function parseAndDisplaySpf(spfRecord) {

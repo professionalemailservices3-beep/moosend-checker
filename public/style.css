@@ -4,7 +4,7 @@ body {
     color: #333;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
     margin: 0;
     padding: 20px;
@@ -180,6 +180,7 @@ button#mainBtn:disabled {
     padding: 1rem;
     border-radius: 6px;
     border: 1px solid #e2e8f0;
+    position: relative;
 }
 
 .status-item i {
@@ -213,7 +214,6 @@ button#mainBtn:disabled {
     font-family: monospace;
 }
 
-/* New/Updated Styles */
 .reset-btn {
     position: absolute;
     top: 1rem;
@@ -227,6 +227,7 @@ button#mainBtn:disabled {
     border-radius: 50%;
     cursor: pointer;
     font-size: 1rem;
+    z-index: 10;
 }
 
 .reset-btn:hover {
@@ -235,24 +236,26 @@ button#mainBtn:disabled {
 }
 
 .record-card {
-    background-color: #f7fafc;
+    background-color: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     margin-bottom: 1.5rem;
-    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
 }
 
 .record-card h3 {
     margin: 0;
     padding: 1rem 1.5rem;
-    background-color: #fff;
+    background-color: #f7fafc;
     border-bottom: 1px solid #e2e8f0;
+    font-size: 1.1em;
 }
 
 .record-card p.instruction {
-    padding: 0 1.5rem;
+    padding: 1rem 1.5rem 0 1.5rem;
     font-size: 0.9em;
     color: #4a5568;
+    margin: 0;
 }
 
 .record-entry {
@@ -261,11 +264,6 @@ button#mainBtn:disabled {
     grid-template-columns: 60px 1fr 40px;
     align-items: center;
     gap: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.record-entry:last-child {
-    border-bottom: none;
 }
 
 .record-label {
@@ -275,7 +273,7 @@ button#mainBtn:disabled {
 
 .record-value {
     font-family: monospace;
-    background-color: #fff;
+    background-color: #f7fafc;
     padding: 0.5rem;
     border-radius: 4px;
     word-break: break-all;
@@ -289,8 +287,62 @@ button#mainBtn:disabled {
     cursor: pointer;
     font-size: 1rem;
     padding: 0.5rem;
+    border-radius: 4px;
 }
 
 .copy-btn:hover {
     color: #5a67d8;
+    background-color: #e2e8f0;
+}
+
+/* New/Updated Styles */
+.tooltip {
+    visibility: hidden;
+    width: 220px;
+    background-color: #2d3748;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -110px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.8em;
+}
+
+.status-item:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.dkim-lookup-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#dkimLookupBtn {
+    width: auto;
+    flex-shrink: 0;
+    background-color: #4a5568;
+}
+
+#dkimLookupBtn:hover {
+    background-color: #2d3748;
+}
+
+.dkim-result-text {
+    font-size: 0.9em;
+    margin-top: 0.75rem;
+}
+
+.dkim-result-text.success {
+    color: #38a169;
+}
+
+.dkim-result-text.error {
+    color: #e53e3e;
 }
