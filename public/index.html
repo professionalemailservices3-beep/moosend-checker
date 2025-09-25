@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Authentication Checker</title>
+    <title>Email Authentication Tool</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -15,18 +15,42 @@
 
 <body>
     <div class="page-wrapper">
-        <div id="mainContainer" class="container">
+        <div id="welcome-screen">
+            <h1>Email Authentication Tool</h1>
+            <p>What would you like to do?</p>
+            <div class="welcome-grid">
+                <div class="welcome-card" id="startLookupBtn">
+                    <i class="fas fa-search"></i>
+                    <h3>Lookup Records</h3>
+                    <p>Check the live MX, SPF, and DMARC records for any domain.</p>
+                </div>
+                <div class="welcome-card" id="startSetupBtn">
+                    <i class="fas fa-tools"></i>
+                    <h3>Setup Moosend</h3>
+                    <p>Check a domain and generate the correct records for Moosend.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="app-container" class="container hidden">
             <button id="resetBtn" class="reset-btn hidden" title="Start Over"><i class="fa-solid fa-undo"></i></button>
-            <h1>Email Authentication Checker</h1>
-            <p>Enter your domain to check its email authentication status and generate records.</p>
+            <h1 id="app-title"></h1>
+            <p id="app-subtitle"></p>
+
             <div id="error-box" class="hidden"></div>
+
             <div class="input-group">
-                <label for="domain">Your Domain Name:</label>
+                <label for="domain">Domain Name:</label>
                 <input type="text" id="domain" placeholder="e.g., yourdomain.com">
             </div>
+
             <div id="results-section" class="hidden">
                 <hr>
-                <h2>Authentication Status</h2>
+                <div id="status-header-section">
+                    <h2>Authentication Status</h2>
+                    <button id="switchToSetupBtn" class="hidden">Setup Moosend for this Domain <i
+                            class="fas fa-arrow-right"></i></button>
+                </div>
                 <div class="status-grid">
                     <div id="mx-status" class="status-item"><i id="mx-status-icon"
                             class="fas fa-spinner fa-spin"></i><span id="mx-status-text">Checking MX...</span>
@@ -42,22 +66,24 @@
                     </div>
                 </div>
                 <div id="raw-records" class="hidden">
-                    <h3>Your Parsed SPF Record</h3>
+                    <h3 id="spf-header">Parsed SPF Record</h3>
                     <div id="spfRecordParsed" class="dns-output-parsed"></div>
-                    <h3 id="otherTxtHeader" class="hidden">Other TXT Records</h3>
-                    <div id="otherTxtRecords" class="dns-output"></div>
+                    <h3 id="dmarc-header" class="hidden">Parsed DMARC Record</h3>
+                    <div id="dmarcRecordParsed" class="dns-output-parsed hidden"></div>
                 </div>
             </div>
+
             <div id="dkimSection" class="input-group hidden">
                 <label for="dkimSelector">Moosend DKIM Selector</label>
                 <div class="dkim-lookup-group">
                     <input type="text" id="dkimSelector" value="ms">
                     <button id="dkimLookupBtn">Lookup Record</button>
                 </div>
-                <textarea id="dkimValue" class="hidden" rows="4"></textarea>
                 <div id="dkimLookupResult" class="dkim-result-text"></div>
+                <textarea id="dkimValue" class="hidden" rows="4"
+                    placeholder="DKIM lookup failed. Please paste the full DKIM value from your Moosend account here."></textarea>
             </div>
-            <div id="loader" class="hidden"></div>
+
             <button id="mainBtn">
                 <span id="btnText">Check DNS</span>
                 <i id="btnIcon" class="fas fa-arrow-right hidden"></i>

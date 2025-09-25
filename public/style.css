@@ -116,55 +116,6 @@ button#mainBtn:disabled {
     display: none !important;
 }
 
-.dns-output-parsed {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 1rem;
-    background-color: #f7fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-}
-
-.spf-mechanism {
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-family: monospace;
-    font-size: 0.9em;
-    font-weight: 500;
-    border: 1px solid transparent;
-}
-
-.spf-mechanism.spf-version {
-    background-color: #e2e8f0;
-    color: #4a5568;
-}
-
-.spf-mechanism.spf-include {
-    background-color: #ebf4ff;
-    color: #4299e1;
-    border-color: #bee3f8;
-}
-
-.spf-mechanism.spf-ip4,
-.spf-mechanism.spf-ip6 {
-    background-color: #f0fff4;
-    color: #48bb78;
-    border-color: #9ae6b4;
-}
-
-.spf-mechanism.spf-all {
-    background-color: #fff5f5;
-    color: #c53030;
-    border-color: #fc8181;
-}
-
-.spf-mechanism.spf-unknown {
-    background-color: #fafafa;
-    color: #718096;
-    border-color: #e2e8f0;
-}
-
 .status-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -295,7 +246,6 @@ button#mainBtn:disabled {
     background-color: #e2e8f0;
 }
 
-/* New/Updated Styles */
 .tooltip {
     visibility: hidden;
     width: 220px;
@@ -345,4 +295,129 @@ button#mainBtn:disabled {
 
 .dkim-result-text.error {
     color: #e53e3e;
+}
+
+textarea#dkimValue {
+    margin-top: 0.75rem;
+}
+
+/* New/Updated Styles */
+#welcome-screen {
+    text-align: center;
+}
+
+.welcome-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.welcome-card {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.welcome-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-card i {
+    font-size: 2.5rem;
+    color: #5a67d8;
+    margin-bottom: 1rem;
+}
+
+.welcome-card p {
+    color: #4a5568;
+}
+
+.dns-output-parsed {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+.dns-pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-family: monospace;
+    font-size: 0.9em;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.dns-pill.version {
+    background-color: #e2e8f0;
+    color: #4a5568;
+}
+
+.dns-pill.include {
+    background-color: #ebf4ff;
+    color: #4299e1;
+    border-color: #bee3f8;
+}
+
+.dns-pill.ip {
+    background-color: #f0fff4;
+    color: #48bb78;
+    border-color: #9ae6b4;
+}
+
+.dns-pill.all {
+    background-color: #fff5f5;
+    color: #c53030;
+    border-color: #fc8181;
+}
+
+.dns-pill.unknown {
+    background-color: #fafafa;
+    color: #718096;
+    border-color: #e2e8f0;
+}
+
+.dns-pill.moosend-spf {
+    background-color: #5a67d8;
+    color: white;
+    border-color: #434190;
+}
+
+.dns-pill.dmarc-tag {
+    background-color: #ebf8ff;
+    color: #4299e1;
+}
+
+.dns-pill.dmarc-policy {
+    background-color: #fefcbf;
+    color: #b7791f;
+}
+
+#status-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#switchToSetupBtn {
+    background: none;
+    border: none;
+    color: #5a67d8;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9em;
+    padding: 0.5rem;
+}
+
+#switchToSetupBtn:hover {
+    text-decoration: underline;
 }
