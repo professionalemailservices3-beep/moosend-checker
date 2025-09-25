@@ -185,7 +185,6 @@ button#mainBtn:disabled {
     font-weight: 500;
     border: 1px solid transparent;
     word-break: break-all;
-    /* FIX: Prevents overflow */
 }
 
 .dns-pill.version {
@@ -260,15 +259,14 @@ button#mainBtn:disabled {
     font-size: 0.9em;
     color: #4a5568;
     margin: 0;
+    line-height: 1.5;
 }
 
 .record-entry {
     padding: 1rem 1.5rem;
     display: grid;
     grid-template-columns: 60px 1fr auto;
-    /* FIX: Grid layout for button */
     align-items: start;
-    /* FIX: Top-aligns labels */
     gap: 1rem;
 }
 
@@ -276,7 +274,6 @@ button#mainBtn:disabled {
     font-weight: 600;
     color: #2d3748;
     padding-top: 0.5rem;
-    /* Aligns with pill padding */
 }
 
 .record-value {
@@ -297,7 +294,6 @@ button#mainBtn:disabled {
     padding: 0.5rem;
     border-radius: 4px;
     align-self: center;
-    /* Vertically centers button */
 }
 
 .copy-btn:hover {
@@ -428,4 +424,41 @@ textarea#dkimValue {
 
 .reset-btn-prominent:hover {
     background-color: #2d3748;
+}
+
+/* New Tooltip Styles for Record Cards */
+.tooltip-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+    top: 2px;
+}
+
+.tooltip-wrapper .fa-question-circle {
+    color: #a0aec0;
+    cursor: help;
+}
+
+.tooltip-wrapper .tooltip-text {
+    visibility: hidden;
+    width: 280px;
+    background-color: #2d3748;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 50%;
+    margin-left: -140px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.9em;
+    font-weight: normal;
+}
+
+.tooltip-wrapper:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
 }

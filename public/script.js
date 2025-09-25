@@ -7,13 +7,9 @@ document.getElementById('startLookupBtn').addEventListener('click', () => startA
 document.getElementById('startSetupBtn').addEventListener('click', () => startApp('setup'));
 document.getElementById('switchToSetupBtn').addEventListener('click', () => startApp('setup'));
 document.getElementById('mainBtn').addEventListener('click', handleMainButtonClick);
-document.getElementById('domain').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleMainButtonClick(); } });
-document.getElementById('dkimLookupBtn').addEventListener('click', handleDkimLookup);
-
 document.getElementById('domain').addEventListener('input', (e) => {
     currentDomain = e.target.value;
     const mainBtn = document.getElementById('mainBtn');
-
     if (mainBtn.dataset.state === 'dnsChecked') {
         mainBtn.dataset.state = 'initial';
         const btnText = appMode === 'lookup' ? 'Lookup Domain' : 'Check DNS';
@@ -21,14 +17,12 @@ document.getElementById('domain').addEventListener('input', (e) => {
         mainBtn.querySelector('#btnIcon').classList.add('hidden');
         document.getElementById('dkimSection').classList.add('hidden');
         document.getElementById('results-section').classList.add('hidden');
-
-        // FIX: Added this line to clear the old DKIM value when a new domain is typed.
         document.getElementById('dkimValue').value = '';
-
         clearPreviousResults();
     }
 });
-
+document.getElementById('domain').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleMainButtonClick(); } });
+document.getElementById('dkimLookupBtn').addEventListener('click', handleDkimLookup);
 
 // --- Core Functions ---
 function startApp(mode) {
@@ -78,20 +72,10 @@ async function performDnsQuery() {
         updateStatusItem('dmarc', !!dmarcRecord, 'DMARC Record Found', 'No DMARC Record Found');
 
         const rawRecordsContainer = document.getElementById('raw-records');
-        document.getElementById('spfRecordParsed').innerHTML = '';
-        document.getElementById('dmarcRecordParsed').innerHTML = '';
-        document.getElementById('dmarc-header').classList.add('hidden');
-        rawRecordsContainer.classList.add('hidden');
-
-        if (spfRecord) {
-            document.getElementById('spfRecordParsed').innerHTML = createPillHtml(spfRecord, 'spf');
-            rawRecordsContainer.classList.remove('hidden');
-        }
-        if (dmarcRecord) {
-            document.getElementById('dmarcRecordParsed').innerHTML = createPillHtml(dmarcRecord, 'dmarc');
-            document.getElementById('dmarc-header').classList.remove('hidden');
-            rawRecordsContainer.classList.remove('hidden');
-        }
+        document.getElementById('spfRecordParsed').innerHTML = spfRecord ? createPillHtml(spfRecord, 'spf') : 'No SPF record found.';
+        document.getElementById('dmarcRecordParsed').innerHTML = dmarcRecord ? createPillHtml(dmarcRecord, 'dmarc') : '';
+        if (dmarcRecord) document.getElementById('dmarc-header').classList.remove('hidden');
+        if (spfRecord || dmarcRecord) rawRecordsContainer.classList.remove('hidden');
 
         if (appMode === 'lookup') {
             document.getElementById('switchToSetupBtn').classList.remove('hidden');
@@ -188,19 +172,24 @@ function createPillHtml(recordString, type) {
 }
 function generateSpfCard(existingSpf, hasMoosendSpf) {
     let instruction, value; const moosendSpf = 'include:spfa.mailendo.com';
+    const tooltip = `<span class="tooltip-wrapper"><i class="far fa-question-circle"></i><span class="tooltip-text">An SPF (Sender Policy Framework) record lists all the servers authorized to send email on behalf of your domain. This helps prevent spammers from spoofing your domain.</span></span>`;
     if (hasMoosendSpf) { instruction = "Your SPF record is already correctly configured."; value = existingSpf; }
     else if (existingSpf) { instruction = "Your domain has an SPF record, but it's missing the Moosend value. **Update your existing record** to match the value below."; const parts = existingSpf.split(' '); if (!parts.includes(moosendSpf)) parts.splice(parts.length - 1, 0, moosendSpf); value = parts.join(' '); }
     else { instruction = "Your domain does not have an SPF record. Create a new TXT record with the following details:"; value = `v=spf1 ${moosendSpf} ~all`; }
-    return `<div class="record-card"><h3>SPF Record</h3><p class="instruction">${instruction}</p><div class="record-entry"><span class="record-label">Host</span><span class="record-value">@</span><button class="copy-btn" data-copy="@" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><div class="dns-output-parsed">${createPillHtml(value, 'spf')}</div><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
+    return `<div class="record-card"><h3>SPF Record</h3><p class="instruction">${instruction}${tooltip}</p><div class="record-entry"><span class="record-label">Host</span><span class="record-value">@</span><button class="copy-btn" data-copy="@" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><div class="dns-output-parsed">${createPillHtml(value, 'spf')}</div><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
 }
 function generateDkimCard(domain, dkimValue) {
     const host = `ms._domainkey`;
-    return `<div class="record-card"><h3>DKIM Record</h3><p class="instruction">Add this TXT record to enable Moosend to digitally sign your emails.</p><div class="record-entry"><span class="record-label">Host</span><span class="record-value">${host}</span><button class="copy-btn" data-copy="${host}" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><div class="dns-output-parsed">${createPillHtml(dkimValue, 'dkim')}</div><button class="copy-btn" data-copy="${dkimValue}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
+    const tooltip = `<span class="tooltip-wrapper"><i class="far fa-question-circle"></i><span class="tooltip-text">A DKIM (DomainKeys Identified Mail) record adds a digital signature to your emails, allowing receiving servers to verify that the email was actually sent by you and hasn't been tampered with.</span></span>`;
+    return `<div class="record-card"><h3>DKIM Record</h3><p class="instruction">Add this TXT record to enable Moosend to digitally sign your emails.${tooltip}</p><div class="record-entry"><span class="record-label">Host</span><span class="record-value">${host}</span><button class="copy-btn" data-copy="${host}" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><div class="dns-output-parsed">${createPillHtml(dkimValue, 'dkim')}</div><button class="copy-btn" data-copy="${dkimValue}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
 }
 function generateDmarcCard(domain, hasDmarc) {
     if (hasDmarc) return '';
-    const host = `_dmarc`; const value = `v=DMARC1; p=none; rua=mailto:dmarc-reports@${domain}`;
-    return `<div class="record-card"><h3>DMARC Record (Recommended)</h3><p class="instruction">Your domain is missing a DMARC record. We highly recommend adding one to improve security.</p><div class="record-entry"><span class="record-label">Host</span><span class="record-value">${host}</span><button class="copy-btn" data-copy="${host}" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><div class="dns-output-parsed">${createPillHtml(value, 'dmarc')}</div><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
+    const host = `_dmarc`;
+    // FIX: Simplified DMARC value per user request
+    const value = `v=DMARC1; p=none;`;
+    const tooltip = `<span class="tooltip-wrapper"><i class="far fa-question-circle"></i><span class="tooltip-text">A DMARC record tells receiving mail servers what to do with emails that fail SPF or DKIM checks (e.g., do nothing, quarantine, or reject). It also enables reporting on email activity.</span></span>`;
+    return `<div class="record-card"><h3>DMARC Record (Recommended)</h3><p class="instruction">Your domain is missing a DMARC record. We highly recommend adding one to improve security.${tooltip}</p><div class="record-entry"><span class="record-label">Host</span><span class="record-value">${host}</span><button class="copy-btn" data-copy="${host}" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><div class="dns-output-parsed">${createPillHtml(value, 'dmarc')}</div><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
 }
 
 function resetApp(softReset = false) {
