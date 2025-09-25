@@ -9,7 +9,7 @@ document.getElementById('switchToSetupBtn').addEventListener('click', () => star
 document.getElementById('mainBtn').addEventListener('click', handleMainButtonClick);
 document.getElementById('domain').addEventListener('input', (e) => currentDomain = e.target.value);
 document.getElementById('domain').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleMainButtonClick(); } });
-document.getElementById('resetBtn').addEventListener('click', resetApp);
+document.getElementById('resetBtn').addEventListener('click', () => resetApp(false));
 document.getElementById('dkimLookupBtn').addEventListener('click', handleDkimLookup);
 
 // --- Core Functions ---
@@ -25,7 +25,8 @@ function startApp(mode) {
         document.getElementById('app-subtitle').textContent = 'Enter a domain to see its live email authentication records.';
         document.getElementById('mainBtn').querySelector('#btnText').textContent = 'Lookup Domain';
     } else { // setup mode
-        document.getElementById('app-title').textContent = 'Setup Moosend Authentication';
+        // RENAMED this section
+        document.getElementById('app-title').textContent = 'Setup Email Authentication';
         document.getElementById('app-subtitle').textContent = 'Check your domain and generate the necessary records for Moosend.';
         document.getElementById('mainBtn').querySelector('#btnText').textContent = 'Check DNS';
     }
@@ -58,28 +59,25 @@ async function performDnsQuery() {
         if (!response.ok) throw new Error(`Status: ${response.status} (${response.statusText})`);
         const data = await response.json();
 
-        // Update Status UI
         updateStatusItem('mx', data.mx.length > 0, 'MX Records Found', 'No MX Records Found');
         const spfRecord = data.txt.find(r => r.startsWith('v=spf1'));
         updateSpfStatus(spfRecord, spfRecord && spfRecord.includes('include:spfa.mailendo.com'));
         const dmarcRecord = data.dmarc.find(r => r.startsWith('v=DMARC1'));
         updateStatusItem('dmarc', !!dmarcRecord, 'DMARC Record Found', 'No DMARC Record Found');
 
-        // Display Parsed Records
         const rawRecordsContainer = document.getElementById('raw-records');
         if (spfRecord || dmarcRecord) rawRecordsContainer.classList.remove('hidden');
         if (spfRecord) { parseAndDisplay(spfRecord, 'spf'); } else { document.getElementById('spf-header').classList.add('hidden'); }
         if (dmarcRecord) { parseAndDisplay(dmarcRecord, 'dmarc'); } else { document.getElementById('dmarc-header').classList.add('hidden'); }
 
-        // Logic based on App Mode
         if (appMode === 'lookup') {
             document.getElementById('switchToSetupBtn').classList.remove('hidden');
             mainBtn.querySelector('#btnText').textContent = 'Lookup Another Domain';
             mainBtn.addEventListener('click', () => resetApp(true), { once: true });
-        } else { // setup mode
+        } else {
             document.getElementById('dkimSection').classList.remove('hidden');
             mainBtn.dataset.state = 'dnsChecked';
-            mainBtn.querySelector('#btnText').textContent = 'Generate Final Records';
+            document.getElementById('btnText').textContent = 'Generate Final Records';
             mainBtn.querySelector('#btnIcon').classList.remove('hidden');
         }
     } catch (error) {
@@ -112,7 +110,6 @@ async function handleDkimLookup() {
         resultEl.textContent = '✅ DKIM record found!';
         resultEl.classList.add('success');
     } catch (error) {
-        // FIX: If lookup fails, show the manual entry textbox
         resultEl.textContent = `❌ ${error.message} Please paste the value below.`;
         resultEl.classList.add('error');
         dkimValueTextarea.classList.remove('hidden');
@@ -123,7 +120,8 @@ function handleGenerateRecords() {
     const dkimValue = document.getElementById('dkimValue').value;
     if (!dkimValue) { alert('Please lookup or paste a DKIM value to generate the records.'); return; }
 
-    document.getElementById('mainContainer').classList.add('moved-left');
+    // FIX: Corrected ID from mainContainer to app-container
+    document.getElementById('app-container').classList.add('moved-left');
     const generatedContainer = document.createElement('div');
     generatedContainer.className = 'container generated-records';
 
@@ -132,7 +130,7 @@ function handleGenerateRecords() {
     const hasDmarc = document.getElementById('dmarc-status').classList.contains('valid');
     const domain = document.getElementById('domain').value;
 
-    generatedContainer.innerHTML = `<h2>Moosend Configuration</h2>
+    generatedContainer.innerHTML = `<h2>Email Configuration</h2>
         ${generateSpfCard(spfRecordString, hasMoosendSpf)}
         ${generateDkimCard(domain, dkimValue)}
         ${generateDmarcCard(domain, hasDmarc)}`;
@@ -145,11 +143,9 @@ function handleGenerateRecords() {
     });
 }
 
-
 // --- UI Generation & Helpers ---
 function generateSpfCard(existingSpf, hasMoosendSpf) {
-    let instruction, value;
-    const moosendSpf = 'include:spfa.mailendo.com';
+    let instruction, value; const moosendSpf = 'include:spfa.mailendo.com';
     if (hasMoosendSpf) { instruction = "Your SPF record is already correctly configured. No action is needed."; value = existingSpf; }
     else if (existingSpf) { instruction = "Your domain has an SPF record, but it's missing the Moosend value. **Update your existing record** to match the value below."; const parts = existingSpf.split(' '); if (!parts.includes(moosendSpf)) parts.splice(parts.length - 1, 0, moosendSpf); value = parts.join(' '); }
     else { instruction = "Your domain does not have an SPF record. Create a new TXT record with the following details:"; value = `v=spf1 ${moosendSpf} ~all`; }
@@ -180,12 +176,25 @@ function resetApp(softReset = false) {
     mainBtn.style.opacity = '1';
     document.getElementById('btnIcon').classList.add('hidden');
     clearPreviousResults();
+
+    // Reset view to welcome screen on full reset
+    if (!softReset) {
+        document.getElementById('welcome-screen').classList.remove('hidden');
+        document.getElementById('app-container').classList.add('hidden');
+        currentDomain = '';
+    }
 }
+
 function clearPreviousResults() {
-    document.getElementById('mainContainer').classList.remove('moved-left');
+    // FIX: Corrected ID from mainContainer to app-container
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) {
+        appContainer.classList.remove('moved-left');
+    }
     const generatedContainer = document.querySelector('.generated-records');
     if (generatedContainer) generatedContainer.remove();
 }
+
 function copyToClipboard(text, buttonElement) {
     navigator.clipboard.writeText(text).then(() => {
         const originalIcon = buttonElement.innerHTML;
@@ -220,19 +229,17 @@ function parseAndDisplay(recordString, type) {
         const span = document.createElement('span');
         span.className = 'dns-pill';
         let pillType = 'unknown';
-
         if (type === 'spf') {
             if (part.startsWith('v=')) pillType = 'version';
             else if (part.startsWith('include:')) pillType = 'include';
             else if (part.startsWith('ip4:') || part.startsWith('ip6:')) pillType = 'ip';
             else if (part.endsWith('all')) pillType = 'all';
             if (part.includes('spfa.mailendo.com')) span.classList.add('moosend-spf');
-        } else { // dmarc
+        } else {
             if (part.startsWith('v=')) pillType = 'version';
             else if (part.startsWith('p=')) pillType = 'dmarc-policy';
             else pillType = 'dmarc-tag';
         }
-
         span.classList.add(pillType);
         span.textContent = part;
         container.appendChild(span);

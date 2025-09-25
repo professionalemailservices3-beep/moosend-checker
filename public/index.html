@@ -26,8 +26,8 @@
                 </div>
                 <div class="welcome-card" id="startSetupBtn">
                     <i class="fas fa-tools"></i>
-                    <h3>Setup Moosend</h3>
-                    <p>Check a domain and generate the correct records for Moosend.</p>
+                    <h3>Setup Authentication</h3>
+                    <p>Check a domain and generate the necessary records for Moosend.</p>
                 </div>
             </div>
         </div>
@@ -36,19 +36,16 @@
             <button id="resetBtn" class="reset-btn hidden" title="Start Over"><i class="fa-solid fa-undo"></i></button>
             <h1 id="app-title"></h1>
             <p id="app-subtitle"></p>
-
             <div id="error-box" class="hidden"></div>
-
             <div class="input-group">
                 <label for="domain">Domain Name:</label>
                 <input type="text" id="domain" placeholder="e.g., yourdomain.com">
             </div>
-
             <div id="results-section" class="hidden">
                 <hr>
                 <div id="status-header-section">
                     <h2>Authentication Status</h2>
-                    <button id="switchToSetupBtn" class="hidden">Setup Moosend for this Domain <i
+                    <button id="switchToSetupBtn" class="hidden">Setup Authentication for this Domain <i
                             class="fas fa-arrow-right"></i></button>
                 </div>
                 <div class="status-grid">
@@ -72,7 +69,6 @@
                     <div id="dmarcRecordParsed" class="dns-output-parsed hidden"></div>
                 </div>
             </div>
-
             <div id="dkimSection" class="input-group hidden">
                 <label for="dkimSelector">Moosend DKIM Selector</label>
                 <div class="dkim-lookup-group">
@@ -83,7 +79,6 @@
                 <textarea id="dkimValue" class="hidden" rows="4"
                     placeholder="DKIM lookup failed. Please paste the full DKIM value from your Moosend account here."></textarea>
             </div>
-
             <button id="mainBtn">
                 <span id="btnText">Check DNS</span>
                 <i id="btnIcon" class="fas fa-arrow-right hidden"></i>
