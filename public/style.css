@@ -16,7 +16,6 @@ body {
     gap: 2rem;
     width: 100%;
     max-width: 1400px;
-    /* Increased width */
     justify-content: center;
     align-items: flex-start;
 }
@@ -39,7 +38,6 @@ body {
 
 .generated-records {
     flex-basis: 60%;
-    /* Increased width */
     animation: fadeIn 0.5s ease-in-out;
 }
 
@@ -186,6 +184,8 @@ button#mainBtn:disabled {
     font-size: 0.9em;
     font-weight: 500;
     border: 1px solid transparent;
+    word-break: break-all;
+    /* FIX: Prevents overflow */
 }
 
 .dns-pill.version {
@@ -234,6 +234,11 @@ button#mainBtn:disabled {
     color: #b7791f;
 }
 
+.dns-pill.dkim-tag {
+    background-color: #e6fffa;
+    color: #38b2ac;
+}
+
 .record-card {
     background-color: #fff;
     border: 1px solid #e2e8f0;
@@ -260,19 +265,27 @@ button#mainBtn:disabled {
 .record-entry {
     padding: 1rem 1.5rem;
     display: grid;
-    grid-template-columns: 60px 1fr 40px;
-    align-items: center;
+    grid-template-columns: 60px 1fr auto;
+    /* FIX: Grid layout for button */
+    align-items: start;
+    /* FIX: Top-aligns labels */
     gap: 1rem;
 }
 
 .record-label {
     font-weight: 600;
     color: #2d3748;
+    padding-top: 0.5rem;
+    /* Aligns with pill padding */
 }
 
-/* The record value is now the parsed container */
-.record-value-parsed {
-    grid-column: 2 / span 2;
+.record-value {
+    font-family: monospace;
+    background-color: #f7fafc;
+    padding: 0.5rem;
+    border-radius: 4px;
+    word-break: break-all;
+    border: 1px solid #e2e8f0;
 }
 
 .copy-btn {
@@ -283,6 +296,8 @@ button#mainBtn:disabled {
     font-size: 1rem;
     padding: 0.5rem;
     border-radius: 4px;
+    align-self: center;
+    /* Vertically centers button */
 }
 
 .copy-btn:hover {
@@ -345,7 +360,6 @@ textarea#dkimValue {
     margin-top: 0.75rem;
 }
 
-/* New/Updated Styles */
 #welcome-screen {
     text-align: center;
 }
