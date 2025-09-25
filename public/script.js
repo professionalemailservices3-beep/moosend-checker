@@ -1,6 +1,7 @@
 // --- Global State ---
 let appMode = 'lookup';
 let currentDomain = '';
+let lastQueryData = null; // New global variable to reliably store DNS results
 
 // --- Event Listeners ---
 document.getElementById('startLookupBtn').addEventListener('click', () => startApp('lookup'));
@@ -64,6 +65,7 @@ async function performDnsQuery() {
         const response = await fetch(`/.netlify/functions/dns-query?domain=${domain}`);
         if (!response.ok) throw new Error(`Status: ${response.status} (${response.statusText})`);
         const data = await response.json();
+        lastQueryData = data; // FIX: Store the raw data globally
 
         updateStatusItem('mx', data.mx.length > 0, 'MX Records Found', 'No MX Records Found');
         const spfRecord = data.txt.find(r => r.startsWith('v=spf1'));
@@ -74,7 +76,7 @@ async function performDnsQuery() {
         const rawRecordsContainer = document.getElementById('raw-records');
         document.getElementById('spfRecordParsed').innerHTML = spfRecord ? createPillHtml(spfRecord, 'spf') : 'No SPF record found.';
         document.getElementById('dmarcRecordParsed').innerHTML = dmarcRecord ? createPillHtml(dmarcRecord, 'dmarc') : '';
-        if (dmarcRecord) document.getElementById('dmarc-header').classList.remove('hidden');
+        if (dmarcRecord) document.getElementById('dmarc-header').classList.remove('hidden'); else document.getElementById('dmarc-header').classList.add('hidden');
         if (spfRecord || dmarcRecord) rawRecordsContainer.classList.remove('hidden');
 
         if (appMode === 'lookup') {
@@ -129,9 +131,10 @@ function handleGenerateRecords() {
     const generatedContainer = document.createElement('div');
     generatedContainer.className = 'container generated-records';
 
-    const spfRecordString = Array.from(document.getElementById('spfRecordParsed').childNodes).map(node => node.textContent).join(' ');
+    // FIX: Use the stored data instead of reading from the DOM
+    const spfRecordString = lastQueryData ? lastQueryData.txt.find(r => r.startsWith('v=spf1')) : null;
     const hasMoosendSpf = spfRecordString && spfRecordString.includes('include:spfa.mailendo.com');
-    const hasDmarc = document.getElementById('dmarc-status').classList.contains('valid');
+    const hasDmarc = lastQueryData && lastQueryData.dmarc.length > 0;
     const domain = document.getElementById('domain').value;
 
     generatedContainer.innerHTML = `<h2>Email Configuration</h2>
@@ -185,15 +188,16 @@ function generateDkimCard(domain, dkimValue) {
 }
 function generateDmarcCard(domain, hasDmarc) {
     if (hasDmarc) return '';
-    const host = `_dmarc`;
-    // FIX: Simplified DMARC value per user request
-    const value = `v=DMARC1; p=none;`;
+    const host = `_dmarc`; const value = `v=DMARC1; p=none;`;
     const tooltip = `<span class="tooltip-wrapper"><i class="far fa-question-circle"></i><span class="tooltip-text">A DMARC record tells receiving mail servers what to do with emails that fail SPF or DKIM checks (e.g., do nothing, quarantine, or reject). It also enables reporting on email activity.</span></span>`;
     return `<div class="record-card"><h3>DMARC Record (Recommended)</h3><p class="instruction">Your domain is missing a DMARC record. We highly recommend adding one to improve security.${tooltip}</p><div class="record-entry"><span class="record-label">Host</span><span class="record-value">${host}</span><button class="copy-btn" data-copy="${host}" title="Copy"><i class="far fa-copy"></i></button></div><div class="record-entry"><span class="record-label">Value</span><div class="dns-output-parsed">${createPillHtml(value, 'dmarc')}</div><button class="copy-btn" data-copy="${value}" title="Copy"><i class="far fa-copy"></i></button></div></div>`;
 }
 
 function resetApp(softReset = false) {
-    if (!softReset) currentDomain = '';
+    if (!softReset) {
+        currentDomain = '';
+        lastQueryData = null; // Also clear the stored data on a full reset
+    }
     document.getElementById('domain').value = currentDomain;
     document.getElementById('dkimValue').value = '';
     document.getElementById('dkimSelector').value = 'ms';
