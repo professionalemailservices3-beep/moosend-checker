@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DNS Record Generator for Moosend</title>
+    <title>Email Authentication Checker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -14,8 +14,8 @@
 <body>
     <div class="page-wrapper">
         <div id="mainContainer" class="container">
-            <h1>Moosend DNS Record Generator</h1>
-            <p>Enter your domain to check its DNS and generate records for Moosend.</p>
+            <h1>Email Authentication Checker</h1>
+            <p>Enter your domain to check its SPF & DMARC status and generate Moosend records.</p>
 
             <div id="error-box" class="hidden"></div>
 
@@ -23,26 +23,41 @@
                 <label for="domain">Your Domain Name:</label>
                 <input type="text" id="domain" placeholder="e.g., yourdomain.com">
             </div>
+
+            <div id="results-section" class="hidden">
+                <hr>
+                <h2>Authentication Status</h2>
+                <div class="status-grid">
+                    <div id="spf-status" class="status-item">
+                        <i id="spf-status-icon" class="fas fa-spinner fa-spin"></i>
+                        <span id="spf-status-text">Checking SPF...</span>
+                    </div>
+                    <div id="dkim-status" class="status-item">
+                        <i id="dkim-status-icon" class="fas fa-cogs"></i>
+                        <span id="dkim-status-text">Ready to configure DKIM</span>
+                    </div>
+                    <div id="dmarc-status" class="status-item">
+                        <i id="dmarc-status-icon" class="fas fa-spinner fa-spin"></i>
+                        <span id="dmarc-status-text">Checking DMARC...</span>
+                    </div>
+                </div>
+                <div id="raw-records" class="hidden">
+                    <h3>Full TXT Record(s) Found</h3>
+                    <div id="txtRecords" class="dns-output"></div>
+                </div>
+            </div>
+
             <div id="dkimSection" class="input-group hidden">
                 <label for="dkimValue">Moosend DKIM Value:</label>
-                <textarea id="dkimValue" rows="4" placeholder="Paste your DKIM value here"></textarea>
+                <textarea id="dkimValue" rows="4"
+                    placeholder="Paste the DKIM value from your Moosend account"></textarea>
             </div>
+
             <div id="loader" class="hidden"></div>
             <button id="mainBtn">
                 <span id="btnText">Check DNS</span>
                 <i id="btnIcon" class="fas fa-arrow-right hidden"></i>
             </button>
-            <div id="currentDnsResults" class="hidden">
-                <h2>Your Current DNS Records</h2>
-                <div class="record-section">
-                    <h3>TXT Records</h3>
-                    <div id="txtRecords" class="dns-output">No TXT records found.</div>
-                </div>
-                <div class="record-section">
-                    <h3>CNAME Records</h3>
-                    <div id="cnameRecords" class="dns-output">No CNAME records found.</div>
-                </div>
-            </div>
         </div>
     </div>
     <script src="script.js"></script>

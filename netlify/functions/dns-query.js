@@ -11,9 +11,11 @@ exports.handler = async function (event, context) {
     }
 
     try {
-        const [txtRecords, cnameRecords] = await Promise.all([
-            dns.resolveTxt(domain).catch(() => []),
-            dns.resolveCname(domain).catch(() => []),
+        // Fetch all three record types in parallel for speed
+        const [txtRecords, cnameRecords, dmarcRecords] = await Promise.all([
+            dns.resolveTxt(domain).catch(() => []), // For SPF
+            dns.resolveCname(domain).catch(() => []), // For CNAME
+            dns.resolveTxt(`_dmarc.${domain}`).catch(() => []) // For DMARC
         ]);
 
         return {
@@ -21,6 +23,7 @@ exports.handler = async function (event, context) {
             body: JSON.stringify({
                 txt: txtRecords.map(record => record.join(' ')),
                 cname: cnameRecords,
+                dmarc: dmarcRecords.map(record => record.join(' ')),
             }),
         };
     } catch (error) {
