@@ -17,22 +17,21 @@
             <h1>Moosend DNS Record Generator</h1>
             <p>Enter your domain to check its DNS and generate records for Moosend.</p>
 
+            <div id="error-box" class="hidden"></div>
+
             <div class="input-group">
                 <label for="domain">Your Domain Name:</label>
                 <input type="text" id="domain" placeholder="e.g., yourdomain.com">
             </div>
-
             <div id="dkimSection" class="input-group hidden">
                 <label for="dkimValue">Moosend DKIM Value:</label>
                 <textarea id="dkimValue" rows="4" placeholder="Paste your DKIM value here"></textarea>
             </div>
-
             <div id="loader" class="hidden"></div>
             <button id="mainBtn">
                 <span id="btnText">Check DNS</span>
                 <i id="btnIcon" class="fas fa-arrow-right hidden"></i>
             </button>
-
             <div id="currentDnsResults" class="hidden">
                 <h2>Your Current DNS Records</h2>
                 <div class="record-section">

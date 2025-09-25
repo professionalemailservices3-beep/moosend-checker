@@ -66,7 +66,6 @@ label {
     font-weight: bold;
 }
 
-/* FIX: Ensure consistent width calculation */
 input,
 textarea,
 button {
@@ -76,7 +75,6 @@ button {
     border-radius: 4px;
     font-size: 1rem;
     box-sizing: border-box;
-    /* This is the fix for alignment */
 }
 
 button {
@@ -100,11 +98,6 @@ button:disabled {
     cursor: not-allowed;
 }
 
-#currentDnsResults,
-#generatedRecords {
-    margin-top: 2rem;
-}
-
 .hidden {
     display: none !important;
 }
@@ -121,12 +114,6 @@ button:disabled {
     word-wrap: break-word;
     font-family: monospace;
     font-size: 0.9em;
-}
-
-.generated-record-display {
-    background-color: #e2e8f0;
-    padding: 1rem;
-    border-radius: 4px;
 }
 
 .generated-record-display p {
@@ -156,4 +143,16 @@ button:disabled {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* NEW: Error box styling */
+#error-box {
+    background-color: #fff5f5;
+    color: #c53030;
+    border: 1px solid #fc8181;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    white-space: pre-wrap;
+    font-family: monospace;
 }
