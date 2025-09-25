@@ -10,11 +10,10 @@ document.getElementById('mainBtn').addEventListener('click', handleMainButtonCli
 document.getElementById('domain').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleMainButtonClick(); } });
 document.getElementById('dkimLookupBtn').addEventListener('click', handleDkimLookup);
 
-// FIX: New listener to reset the state when the user types a new domain after a check
 document.getElementById('domain').addEventListener('input', (e) => {
     currentDomain = e.target.value;
     const mainBtn = document.getElementById('mainBtn');
-    // If a check was already completed, reset the state to allow a fresh query
+
     if (mainBtn.dataset.state === 'dnsChecked') {
         mainBtn.dataset.state = 'initial';
         const btnText = appMode === 'lookup' ? 'Lookup Domain' : 'Check DNS';
@@ -22,7 +21,10 @@ document.getElementById('domain').addEventListener('input', (e) => {
         mainBtn.querySelector('#btnIcon').classList.add('hidden');
         document.getElementById('dkimSection').classList.add('hidden');
         document.getElementById('results-section').classList.add('hidden');
-        // Crucially, clear the old generated panel immediately
+
+        // FIX: Added this line to clear the old DKIM value when a new domain is typed.
+        document.getElementById('dkimValue').value = '';
+
         clearPreviousResults();
     }
 });
@@ -76,7 +78,6 @@ async function performDnsQuery() {
         updateStatusItem('dmarc', !!dmarcRecord, 'DMARC Record Found', 'No DMARC Record Found');
 
         const rawRecordsContainer = document.getElementById('raw-records');
-        // Clear previous parsed records
         document.getElementById('spfRecordParsed').innerHTML = '';
         document.getElementById('dmarcRecordParsed').innerHTML = '';
         document.getElementById('dmarc-header').classList.add('hidden');
