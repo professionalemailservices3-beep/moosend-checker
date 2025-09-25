@@ -15,7 +15,8 @@ body {
     display: flex;
     gap: 2rem;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1400px;
+    /* Increased width */
     justify-content: center;
     align-items: flex-start;
 }
@@ -32,11 +33,13 @@ body {
 }
 
 .container.moved-left {
-    transform: translateX(-5%);
+    transform: translateX(-10%);
+    flex-shrink: 0;
 }
 
 .generated-records {
-    flex-basis: 50%;
+    flex-basis: 60%;
+    /* Increased width */
     animation: fadeIn 0.5s ease-in-out;
 }
 
@@ -165,25 +168,70 @@ button#mainBtn:disabled {
     font-family: monospace;
 }
 
-.reset-btn {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: #f7fafc;
+/* Redesigned Record Display */
+.dns-output-parsed {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem;
+    background-color: #f7fafc;
     border: 1px solid #e2e8f0;
-    color: #718096;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1rem;
-    z-index: 10;
+    border-radius: 6px;
 }
 
-.reset-btn:hover {
-    background: #e2e8f0;
-    color: #2d3748;
+.dns-pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-family: monospace;
+    font-size: 0.9em;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.dns-pill.version {
+    background-color: #e2e8f0;
+    color: #4a5568;
+}
+
+.dns-pill.include {
+    background-color: #ebf4ff;
+    color: #4299e1;
+    border-color: #bee3f8;
+}
+
+.dns-pill.ip {
+    background-color: #f0fff4;
+    color: #48bb78;
+    border-color: #9ae6b4;
+}
+
+.dns-pill.all {
+    background-color: #fff5f5;
+    color: #c53030;
+    border-color: #fc8181;
+}
+
+.dns-pill.unknown {
+    background-color: #fafafa;
+    color: #718096;
+    border-color: #e2e8f0;
+}
+
+.dns-pill.moosend-spf {
+    background-color: #5a67d8;
+    color: white;
+    border-color: #434190;
+    font-weight: bold;
+}
+
+.dns-pill.dmarc-tag {
+    background-color: #ebf8ff;
+    color: #4299e1;
+}
+
+.dns-pill.dmarc-policy {
+    background-color: #fefcbf;
+    color: #b7791f;
 }
 
 .record-card {
@@ -222,13 +270,9 @@ button#mainBtn:disabled {
     color: #2d3748;
 }
 
-.record-value {
-    font-family: monospace;
-    background-color: #f7fafc;
-    padding: 0.5rem;
-    border-radius: 4px;
-    word-break: break-all;
-    border: 1px solid #e2e8f0;
+/* The record value is now the parsed container */
+.record-value-parsed {
+    grid-column: 2 / span 2;
 }
 
 .copy-btn {
@@ -338,70 +382,6 @@ textarea#dkimValue {
     color: #4a5568;
 }
 
-.dns-output-parsed {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 1rem;
-    background-color: #f7fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-}
-
-.dns-pill {
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-family: monospace;
-    font-size: 0.9em;
-    font-weight: 500;
-    border: 1px solid transparent;
-}
-
-.dns-pill.version {
-    background-color: #e2e8f0;
-    color: #4a5568;
-}
-
-.dns-pill.include {
-    background-color: #ebf4ff;
-    color: #4299e1;
-    border-color: #bee3f8;
-}
-
-.dns-pill.ip {
-    background-color: #f0fff4;
-    color: #48bb78;
-    border-color: #9ae6b4;
-}
-
-.dns-pill.all {
-    background-color: #fff5f5;
-    color: #c53030;
-    border-color: #fc8181;
-}
-
-.dns-pill.unknown {
-    background-color: #fafafa;
-    color: #718096;
-    border-color: #e2e8f0;
-}
-
-.dns-pill.moosend-spf {
-    background-color: #5a67d8;
-    color: white;
-    border-color: #434190;
-}
-
-.dns-pill.dmarc-tag {
-    background-color: #ebf8ff;
-    color: #4299e1;
-}
-
-.dns-pill.dmarc-policy {
-    background-color: #fefcbf;
-    color: #b7791f;
-}
-
 #status-header-section {
     display: flex;
     justify-content: space-between;
@@ -420,4 +400,18 @@ textarea#dkimValue {
 
 #switchToSetupBtn:hover {
     text-decoration: underline;
+}
+
+.reset-btn-prominent {
+    background-color: #4a5568;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    margin: 1.5rem 1.5rem 1rem 1.5rem;
+    font-weight: 600;
+    width: calc(100% - 3rem);
+}
+
+.reset-btn-prominent:hover {
+    background-color: #2d3748;
 }
